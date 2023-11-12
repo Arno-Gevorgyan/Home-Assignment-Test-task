@@ -1,0 +1,14 @@
+.DS_Store
+.vscode
+.idea
+*.pyc
+local_settings.py
+/.env
+.venv
+venv
+*.log
+vol/
+!/vol/.gitkeep
+log/
+!log/.gitkeep
+dump.rdb
