@@ -1,11 +1,12 @@
 from django.urls import path
 
-from algebra_engine.views import api_root, ExpressionHistoryList
+from algebra_engine.views import ExpressionHistoryList, ExpressionInput
 
 app_name = 'algebra_engine'
 
 
 urlpatterns = [
-    path('', api_root, name='api-root'),
     path('expressions/', ExpressionHistoryList.as_view(), name='expression-history'),
+    path('expression-input/', ExpressionInput.as_view(), name='expression-input'),
+
 ]

@@ -1,11 +1,11 @@
 from .models import ExpressionHistory
-from .serializers import ExpressionHistorySerializer
+from .parser import ExpressionEvaluator
+from .serializers import ExpressionHistorySerializer, ExpressionInputSerializer
 
 from django.views import View
-from rest_framework import generics
 from django.shortcuts import render
+from rest_framework import generics, status
 from rest_framework.response import Response
-from rest_framework.decorators import api_view
 
 
 class MainView(View):
@@ -14,12 +14,6 @@ class MainView(View):
     def get(self, request):
         context = {}
         return render(request, self.template, {'context': context})
-
-
-@api_view(['GET'])
-def api_root(request):
-    return Response({
-    })
 
 
 class ExpressionHistoryList(generics.ListAPIView):
@@ -41,3 +35,35 @@ class ExpressionHistoryList(generics.ListAPIView):
     """
     queryset = ExpressionHistory.objects.all()
     serializer_class = ExpressionHistorySerializer
+
+
+class ExpressionInput(generics.CreateAPIView):
+    """
+    API view to handle input of algebraic expressions and return evaluated results.
+
+    This view accepts an algebraic expression, evaluates it, and returns the result.
+    It also stores a record of the expression and its evaluation status in the database.
+    """
+    serializer_class = ExpressionInputSerializer
+
+    def create(self, request, *args, **kwargs):
+        """
+        Handle POST request to evaluate an algebraic expression.
+
+        Args:
+            request: Django Rest Framework request object containing the expression.
+
+        Returns:
+            Response: DRF Response object with the evaluation result or error message.
+        """
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        expression = serializer.validated_data['expression']
+        try:
+            result = ExpressionEvaluator(expression).evaluate()
+            ExpressionHistory.objects.create(expression=expression, result=result, status="SUCCESS")
+            return Response({"result": result}, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            ExpressionHistory.objects.create(expression=expression, status="FAILED")
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
