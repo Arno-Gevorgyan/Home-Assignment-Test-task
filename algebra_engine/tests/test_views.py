@@ -4,6 +4,7 @@ from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
 
 from algebra_engine.tests.constance import *
+from error_messages import SyntaxErrorMessages
 from algebra_engine.models import ExpressionHistory
 from algebra_engine.expression_validator import SyntaxValidator
 from algebra_engine.serializers import ExpressionHistorySerializer
@@ -154,46 +155,43 @@ class SyntaxValidatorTest(TestCase):
             validator = SyntaxValidator(expression)
             with self.assertRaises(SyntaxError) as context:
                 validator.check_empty_parentheses()
-            self.assertEqual(str(context.exception), "Syntax error: empty parentheses found.")
+            self.assertEqual(str(context.exception), SyntaxErrorMessages.EMPTY_PARENTHESES)
 
     def test_missing_operators(self):
         for expression in SyntaxValidatorConstants.MISSING_OPERATORS:
+            expression = ExpressionEvaluator(expression).handle_len_operator(expression)
+            expression = ExpressionEvaluator(expression).handle_abs_operator(expression)
             validator = SyntaxValidator(expression)
             with self.assertRaises(SyntaxError) as context:
-                validator.validate()
-            self.assertEqual(str(context.exception), "Missing operator in expression.")
+                validator.check_missing_operators()
+            self.assertIn(SyntaxErrorMessages.MISSING_OPERATOR, str(context.exception))
 
     def test_invalid_characters(self):
-        expressions = [
-            "3 + $",
-            "3 + 3 @ 4",
-            "3 _ "
-        ]
-        for expression in expressions:
+        for expression in SyntaxValidatorConstants.INVALID_CHARACTERS:
             validator = SyntaxValidator(expression)
             with self.assertRaises(SyntaxError) as context:
-                validator.validate()
-            self.assertIn("Invalid character found in expression:", str(context.exception))
+                validator.check_invalid_characters()
+            self.assertIn(SyntaxErrorMessages.INVALID_CHARACTER_IN_TEST, str(context.exception))
 
     def test_trailing_operators(self):
-        expressions = [
-            "7 /",
-            "4 + 5 -"
-        ]
-        for expression in expressions:
+        for expression in SyntaxValidatorConstants.TRAILING_OPERATORS:
             validator = SyntaxValidator(expression)
             with self.assertRaises(SyntaxError) as context:
-                validator.validate()
-            self.assertEqual(str(context.exception), "Expression ends with an operator, which is invalid.")
+                validator.check_for_trailing_operators()
+            self.assertEqual(str(context.exception), SyntaxErrorMessages.ENDS_WITH_OPERATOR)
 
     def test_mismatched_parentheses(self):
-        validator = SyntaxValidator("(3 + 5")
-        with self.assertRaises(SyntaxError) as context:
-            validator.validate()
-        self.assertEqual(str(context.exception), "Mismatched parentheses.")
+        for expression in SyntaxValidatorConstants.MISMATCHED_PARENTHESES:
+            validator = SyntaxValidator(expression)
+            with self.assertRaises(SyntaxError) as context:
+                validator.check_mismatched_parentheses()
+            self.assertEqual(str(context.exception), SyntaxErrorMessages.MISMATCHED_PARENTHESES)
 
     def test_consecutive_operators(self):
-        validator = SyntaxValidator("4 ***/ 3")
-        with self.assertRaises(SyntaxError) as context:
-            validator.validate()
-        self.assertEqual(str(context.exception), "Invalid consecutive operators found.")
+        for expression in SyntaxValidatorConstants.CONSECUTIVE_OPERATORS:
+            res = ExpressionFormatter(expression)
+            expression = res.format_expression()
+            validator = SyntaxValidator(expression)
+            with self.assertRaises(SyntaxError) as context:
+                validator.check_consecutive_operators()
+            self.assertEqual(str(context.exception), SyntaxErrorMessages.INVALID_CONSECUTIVE_OPERATORS)

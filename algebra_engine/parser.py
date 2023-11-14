@@ -2,6 +2,7 @@ import re
 import operator
 from typing import Any
 
+from error_messages import SyntaxErrorMessages
 from algebra_engine.expression_validator import SyntaxValidator
 
 
@@ -109,10 +110,10 @@ class ExpressionEvaluator:
             return str(self.safe_eval())
 
         except SyntaxError as e:
-            raise Exception(f"Invalid syntax in expression: {self.original_expression}. Details: {str(e)}")
+            raise Exception(SyntaxErrorMessages.GLOBAL_SYNTAX_ERROR.format(self.original_expression, str(e)))
 
         except Exception as e:
-            raise Exception(f"Error evaluating expression: {self.original_expression}. Details: {str(e)}")
+            raise Exception(SyntaxErrorMessages.EVALUATING_EXPRESSION_ERROR.format(self.original_expression, str(e)))
 
     def is_valid_syntax(self) -> Any:
         """
@@ -148,7 +149,7 @@ class ExpressionEvaluator:
 
         # Check for incorrect usage of len (e.g., len(a))
         if re.search(r"len\((?!')", expression):
-            raise ValueError("Incorrect usage of len(): argument not enclosed in quotes.")
+            raise ValueError(SyntaxErrorMessages.LEN_ERROR)
 
         return re.sub(r"len\('([^']*)'\)", replace_len, expression)
 
@@ -164,16 +165,16 @@ class ExpressionEvaluator:
         def replace_abs(match):
             inner_value = match.group(1).strip()
             if inner_value == '':
-                raise ValueError("Empty argument for abs()")
+                raise ValueError(SyntaxErrorMessages.EMPTY_ARGUMENT_ABS)
 
             # Evaluate the expression inside abs()
             try:
                 evaluated_value = eval(inner_value, {"__builtins__": None}, operator.__dict__)
                 return str(abs(evaluated_value))
             except SyntaxError:
-                raise ValueError(f"Syntax error in expression inside abs(): {inner_value}")
+                raise ValueError(SyntaxErrorMessages.EMPTY_ARGUMENT_ABS.format(inner_value))
             except Exception as e:
-                raise ValueError(f"Invalid value for abs(): {inner_value}. Error: {e}")
+                raise ValueError(SyntaxErrorMessages.INVALID_VALUE_ABS.format(inner_value, str(e)))
 
         return re.sub(r'abs\s*\(\s*(.*?)\s*\)', replace_abs, expression)
 
@@ -185,7 +186,5 @@ class ExpressionEvaluator:
 
         Raises: Exception: If the evaluation fails.
         """
-        try:
-            return eval(self.expression, {"__builtins__": None}, operator.__dict__)
-        except Exception as e:
-            raise Exception(f"Error in evaluation: {str(e)}")
+
+        return eval(self.expression, {"__builtins__": None}, operator.__dict__)

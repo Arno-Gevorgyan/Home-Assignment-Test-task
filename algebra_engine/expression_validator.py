@@ -1,5 +1,7 @@
 import re
-from typing import Any, Union
+from typing import Any
+
+from error_messages import SyntaxErrorMessages
 
 
 class SyntaxValidator:
@@ -21,26 +23,21 @@ class SyntaxValidator:
 
         Returns: Any: Error message if syntax is invalid, None otherwise.
         """
-        checks = [
-            self.check_empty_parentheses,
-            self.check_missing_operators,
-            self.check_invalid_characters,
-            self.check_mismatched_parentheses,
-            self.check_consecutive_operators
-        ]
+        self.check_empty_parentheses()
+        self.check_missing_operators()
+        self.check_invalid_characters()
+        self.check_for_trailing_operators()
+        self.check_mismatched_parentheses()
+        self.check_consecutive_operators()
 
-        for check in checks:
-            if error := check():
-                raise SyntaxError(error)
-
-    def check_empty_parentheses(self) -> Union[str | None]:
+    def check_empty_parentheses(self) -> Any:
         """
         Check for empty parentheses in the expression.
 
         Returns:  Union[str | None]: Error message if empty parentheses are found, None otherwise.
         """
         if re.search(r'\(\s*\)', self.expression):
-            return "Syntax error: empty parentheses found."
+            raise SyntaxError(SyntaxErrorMessages.EMPTY_PARENTHESES)
 
     def check_missing_operators(self) -> Any:
         """
@@ -50,16 +47,15 @@ class SyntaxValidator:
         """
         patterns = [
             r'\b\d+\s*(?=\()',  # Number immediately followed by an opening parenthesis
-            r'\b\d+\s+(?=(len|abs)\b)',  # Number followed by a function name
-            r'\)\s*(?=\b(len|abs)\b)',  # Closing parenthesis followed by a function name
-            r'\b(len|abs)\b\s*\d+',  # Function name followed by a number
             r'\)\s+\d+',  # Closing parenthesis followed by a number
+            r'\)\s*(?=\()',  # Closing parenthesis followed directly by an opening parenthesis
             r'\d+\s+\(',  # Number followed by an opening parenthesis
             r'\)\s+\(',  # Closing parenthesis followed by an opening parenthesis
+            r'\b\d+\s+\d+',  # Two numbers with only space in between
         ]
         for pattern in patterns:
             if re.search(pattern, self.expression):
-                return "Missing operator in expression."
+                raise SyntaxError(SyntaxErrorMessages.MISSING_OPERATOR)
 
     def check_invalid_characters(self) -> Any:
         """
@@ -71,25 +67,28 @@ class SyntaxValidator:
         invalid_char_match = re.search(r"[^\s\d\+\-\*\/\(\)\.]", self.expression)
         if invalid_char_match:
             invalid_char = invalid_char_match.group()
-            return f"Invalid character found in expression: -> {invalid_char} :"
+            raise SyntaxError(SyntaxErrorMessages.INVALID_CHARACTER.format(invalid_char))
 
-        # Check for trailing operators
+    def check_for_trailing_operators(self) -> Any:
+        """
+        Check for trailing operators
+        return: Any
+        """
+
         if re.search(r'[\+\-\*\/]$', self.expression):
-            return "Expression ends with an operator, which is invalid."
-
-        # # Check for malformed len() or abs() functions
-        # malformed_function_match = re.search(r'(len|abs)\s*\'[^\']*\)', self.expression)
-        # if malformed_function_match:
-        #     return f"Malformed function found in expression: {malformed_function_match.group()}"
+            raise SyntaxError(SyntaxErrorMessages.ENDS_WITH_OPERATOR)
 
     def check_mismatched_parentheses(self) -> Any:
-        if self.expression.count('(') != self.expression.count(')'):
-            """
-        Check for mismatched parentheses in the expression.
-
-        Returns: Any: Error message if mismatched parentheses are found, None otherwise.
-        """
-            return "Mismatched parentheses."
+        stack = []
+        for char in self.expression:
+            if char == '(':
+                stack.append(char)
+            elif char == ')':
+                if not stack or stack[-1] != '(':
+                    raise SyntaxError(SyntaxErrorMessages.MISMATCHED_PARENTHESES)
+                stack.pop()
+        if stack:
+            raise SyntaxError(SyntaxErrorMessages.MISMATCHED_PARENTHESES)
 
     def check_consecutive_operators(self) -> Any:
         """
@@ -102,16 +101,13 @@ class SyntaxValidator:
             # Disallow combinations like '*/', '/*', etc.
             r"(?<![*/])\*{1}\s*/{1}|/+\s*\*+",
 
-            # Allow single '*' or double '**', disallow more than two '*' in a row
-            r"(?<!\*)\*{3,}(?!\*)",
+            # Allow single '*' or double '**', disallow combinations like '** *'
+            r"(?<!\*)\*{3,}(?!\*)|(?<!\/)\/{3,}(?!\/)|(\*\*|\*\s+)\s*[\+\-\*\/]|(\/\/|\/\s+)\s*[\+\-\*\/]",
 
-            # Allow single '/' or double '//', disallow more than two '/' in a row
-            r"(?<!\/)\/{3,}(?!\/)",
-
-            # Disallow consecutive '+' or '-' unless they are the same
-            r"(?<!\+)(?<!\-)[\+\-]{2,}(?!\+)(?!\-)"
+            # Disallow combinations like '+**', '-**', '/-', '+*', '/+', and '+**'
+            r"\+\s*\*\*|\-\s*\*\*|/\s*\-|\+\s*\*|/\s*\+"
         ]
 
         for pattern in invalid_operator_patterns:
             if re.search(pattern, self.expression):
-                return "Invalid consecutive operators found."
+                raise SyntaxError(SyntaxErrorMessages.INVALID_CONSECUTIVE_OPERATORS)

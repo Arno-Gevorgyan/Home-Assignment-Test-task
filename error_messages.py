@@ -1,2 +1,14 @@
 class SyntaxErrorMessages:
-    pass
+    EMPTY_PARENTHESES = "Empty parentheses found."
+    MISSING_OPERATOR = "Missing operator in expression."
+    INVALID_CHARACTER = "Invalid character found in expression: {}"
+    INVALID_CHARACTER_IN_TEST = "Invalid character found in expression:"
+    ENDS_WITH_OPERATOR = "Expression ends with an operator, which is invalid."
+    MISMATCHED_PARENTHESES = "Mismatched parentheses."
+    INVALID_CONSECUTIVE_OPERATORS = "Invalid consecutive operators found."
+    GLOBAL_SYNTAX_ERROR = "Invalid syntax in expression: {}. Details: {}"
+    EVALUATING_EXPRESSION_ERROR = "Error evaluating expression: {}. Details: {}"
+    LEN_ERROR = "Incorrect usage of len(): argument not enclosed in quotes."
+    EMPTY_ARGUMENT_ABS = "Empty argument for abs()"
+    SYNTAX_ERROR_ABS = "Syntax error in expression inside abs(): {}"
+    INVALID_VALUE_ABS = "Invalid value for abs(): {}. Error: {}"
