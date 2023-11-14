@@ -38,14 +38,12 @@ INSTALLED_APPS = [
     # Third party apps
     'rest_framework',
     'drf_yasg',
-    'corsheaders',
 
     # apps
     'algebra_engine'
 ]
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -85,9 +83,6 @@ DATABASES = {
         'NAME': os.environ.get('DB_DATABASE'),
         'USER': os.environ.get('DB_USERNAME'),
         'PASSWORD': os.environ.get('DB_PASSWORD'),
-        'TEST': {
-            'NAME': os.environ.get('DB_DATABASE_TEST'),
-        },
     }
 }
 
@@ -124,8 +119,6 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 
 STATIC_URL = 'static/'
-CORS_ORIGIN_ALLOW_ALL = True
-CORS_ALLOW_CREDENTIALS = True
 # Default primary key field type
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

@@ -161,15 +161,19 @@ class ExpressionEvaluator:
 
         Returns: str: The expression with 'abs' operations processed.
         """
-
         def replace_abs(match):
             inner_value = match.group(1).strip()
             if inner_value == '':
                 raise ValueError("Empty argument for abs()")
+
+            # Evaluate the expression inside abs()
             try:
-                return str(abs(int(inner_value)))
-            except ValueError:
-                raise ValueError(f"Invalid value for abs(): {inner_value}")
+                evaluated_value = eval(inner_value, {"__builtins__": None}, operator.__dict__)
+                return str(abs(evaluated_value))
+            except SyntaxError:
+                raise ValueError(f"Syntax error in expression inside abs(): {inner_value}")
+            except Exception as e:
+                raise ValueError(f"Invalid value for abs(): {inner_value}. Error: {e}")
 
         return re.sub(r'abs\s*\(\s*(.*?)\s*\)', replace_abs, expression)
 

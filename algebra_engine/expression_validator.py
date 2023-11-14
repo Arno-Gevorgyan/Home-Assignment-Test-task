@@ -1,5 +1,5 @@
 import re
-from typing import Any
+from typing import Any, Union
 
 
 class SyntaxValidator:
@@ -33,11 +33,11 @@ class SyntaxValidator:
             if error := check():
                 raise SyntaxError(error)
 
-    def check_empty_parentheses(self) -> Any:
+    def check_empty_parentheses(self) -> Union[str | None]:
         """
         Check for empty parentheses in the expression.
 
-        Returns: Any: Error message if empty parentheses are found, None otherwise.
+        Returns:  Union[str | None]: Error message if empty parentheses are found, None otherwise.
         """
         if re.search(r'\(\s*\)', self.expression):
             return "Syntax error: empty parentheses found."
@@ -49,6 +49,7 @@ class SyntaxValidator:
         Returns: Any: Error message if missing operators are found, None otherwise.
         """
         patterns = [
+            r'\b\d+\s*(?=\()',  # Number immediately followed by an opening parenthesis
             r'\b\d+\s+(?=(len|abs)\b)',  # Number followed by a function name
             r'\)\s*(?=\b(len|abs)\b)',  # Closing parenthesis followed by a function name
             r'\b(len|abs)\b\s*\d+',  # Function name followed by a number
@@ -66,8 +67,8 @@ class SyntaxValidator:
 
         Returns: Any: Error message if invalid characters or format issues are found, None otherwise.
         """
-        # Check for invalid characters
-        invalid_char_match = re.search(r"[^\s\d\+\-\*\/\(\)]", self.expression)
+        # Allow periods for floating-point numbers
+        invalid_char_match = re.search(r"[^\s\d\+\-\*\/\(\)\.]", self.expression)
         if invalid_char_match:
             invalid_char = invalid_char_match.group()
             return f"Invalid character found in expression: -> {invalid_char} :"
@@ -76,12 +77,10 @@ class SyntaxValidator:
         if re.search(r'[\+\-\*\/]$', self.expression):
             return "Expression ends with an operator, which is invalid."
 
-        # Check for malformed len() or abs() functions
-        malformed_function_match = re.search(r'(len|abs)\s*\'[^\']*\)', self.expression)
-        if malformed_function_match:
-            return f"Malformed function found in expression: {malformed_function_match.group()}"
-
-        return None
+        # # Check for malformed len() or abs() functions
+        # malformed_function_match = re.search(r'(len|abs)\s*\'[^\']*\)', self.expression)
+        # if malformed_function_match:
+        #     return f"Malformed function found in expression: {malformed_function_match.group()}"
 
     def check_mismatched_parentheses(self) -> Any:
         if self.expression.count('(') != self.expression.count(')'):
